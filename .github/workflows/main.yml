@@ -1,4 +1,4 @@
-name: Deploy Fullstack App to Azure (Front + Back)
+name: Deploy Frontend and Backend to Azure
 
 on:
   push:
@@ -10,44 +10,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
+    
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Install frontend dependencies
         run: npm install --prefix front
 
-      - name: Build CRA frontend
+      - name: Build frontend
         run: npm run build --prefix front
+        env:
+          CI: true
 
-      - name: Deploy to Azure Static Web App (Frontend)
+      - name: Deploy frontend to Azure Static Web App
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
+          action: upload
           app_location: "front"
           output_location: "front/build"
           api_location: ""
 
-      - name: Install zip utility
-        run: sudo apt-get install -y zip
 
-      - name: Create ZIP file for backend
+      - name: Install zip utility
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Create backend zip
         run: |
           zip -r backend.zip server.js Back/ package.json -x "node_modules/*" ".git/*" ".github/*" ".env*"
 
-      - name: Deploy to Azure Web App (Backend)
+      - name: Deploy backend to Azure App Service via ZipDeploy
         run: |
           curl -X POST "https://${{ secrets.AZURE_WEBAPP_BACKEND_NAME }}.scm.azurewebsites.net/api/zipdeploy" \
-          --user "${{ secrets.ZIPDEPLOY_USER }}:${{ secrets.ZIPDEPLOY_PASS }}" \
+          --user "${{ secrets.AZURE_WEBAPP_BACKEND_PUBLISH_PROFILE }}" \
           --data-binary @"backend.zip"
-        env:
-          NODE_ENV: production
