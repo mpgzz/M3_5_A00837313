@@ -1,0 +1,50 @@
+name: Deploy Fullstack App to Azure (Front + Back)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Vite frontend
+        run: npm run build --prefix front
+
+      - name: Deploy to Azure Static Web App (Frontend)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "front"
+          output_location: "front/dist"
+          api_location: ""
+
+      - name: Install zip utility
+        run: sudo apt-get install -y zip
+
+      - name: Create ZIP file for backend
+        run: |
+          zip -r backend.zip server.js Back/ package.json -x "node_modules/*" ".git/*" ".github/*" ".env*"
+
+      - name: Deploy to Azure Web App (Backend)
+        run: |
+          curl -X POST "https://${{ secrets.AZURE_WEBAPP_BACKEND_NAME }}.scm.azurewebsites.net/api/zipdeploy" \
+          --user "${{ secrets.ZIPDEPLOY_USER }}:${{ secrets.ZIPDEPLOY_PASS }}" \
+          --data-binary @"backend.zip"
+        env:
+          NODE_ENV: production
