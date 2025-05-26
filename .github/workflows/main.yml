@@ -21,7 +21,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build Vite frontend
+      - name: Install frontend dependencies
+        run: npm install --prefix front
+
+      - name: Build CRA frontend
         run: npm run build --prefix front
 
       - name: Deploy to Azure Static Web App (Frontend)
@@ -31,7 +34,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "front"
-          output_location: "front/dist"
+          output_location: "front/build"
           api_location: ""
 
       - name: Install zip utility
