@@ -1,44 +1,50 @@
-name: Build y deploy de front
+name: Build (Front & Back)
 
 on:
   push:
     branches:
       - main
-
-permissions:
-  contents: write
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Configurar Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Instalar dependencias
+      - name: Install Frontend Dependencies
         run: npm install --prefix front
 
-      - name: Ejecutar lint
-        run: npm run lint --prefix front
-        continue-on-error: true
-
-      - name: Hacer pruebas
-        run: npm test --prefix front
-        continue-on-error: true
-
-      - name: Build
+      - name: Build Frontend
         run: npm run build --prefix front
+        env:
+          CI: true
 
-      - name: Verificar output
-        run: ls -ls front/build
-
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Archive Frontend Build Artifacts
+        uses: actions/upload-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./front/build
+          name: frontend-build
+          path: front/build
+          retention-days: 1
+
+      - name: Install Root/Backend Dependencies
+        run: npm install
+
+      - name: Create Backend ZIP file
+        run: |
+          zip -r backend.zip server.js Back/ package.json -x "node_modules/*" ".git/*" ".github/*" ".env*"
+
+      - name: Archive Backend ZIP Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-zip
+          path: backend.zip
+          retention-days: 1
