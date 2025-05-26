@@ -17,7 +17,8 @@
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
-    "@toolpad/core": "^0.15.0"
+    "@toolpad/core": "^0.15.0",
+    "ajv-keywords": "3.5.2"
   },
   "scripts": {
     "start": "react-scripts start",
