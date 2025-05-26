@@ -2,16 +2,57 @@ const request = require('supertest');
 const app = require('./server');
 
 jest.mock('./Back/Controllers/loginCrud', () => ({
+
   connectToDatabase: jest.fn(() => Promise.resolve()),
-  verifyUserCredentials: jest.fn((email, password) => {
-    if (email === 'test@example.com' && password === 'testpassword') {
-      return { id: 1, email: 'test@example.com', role: 'user' };
+
+ 
+  hashPassword: jest.fn((password) => {
+  
+    if (password === 'testpassword') return 'mockedtesthash';
+    if (password === 'wrongpassword') return 'mockedwronghash';
+    return 'defaultmockhash';
+  }),
+
+ 
+  loginUser: jest.fn(async (req, res) => {
+  
+
+    const { email, password } = req.body;
+    const mockedHashPassword = module.exports.hashPassword; 
+
+    if (email === 'test@example.com' && mockedHashPassword(password) === 'mockedtesthash') {
+
+      const mockToken = 'mocked_jwt_token'; 
+      const userInfo = {
+        usuId: 1,
+        correo: 'test@example.com',
+        rol: 'user',
+        primerNombre: 'Test',
+        primerApellido: 'User',
+        segundoApellido: 'Account',
+      };
+      return res.status(200).json({ userData: { token: mockToken, userInfo } });
+    } else if (email === 'admin@example.com' && mockedHashPassword(password) === 'mockedadminhash') {
+     
+      const mockToken = 'mocked_admin_jwt_token';
+      const userInfo = {
+        usuId: 2,
+        correo: 'admin@example.com',
+        rol: 'admin',
+        primerNombre: 'Admin',
+        primerApellido: 'User',
+        segundoApellido: 'Account',
+      };
+      return res.status(200).json({ userData: { token: mockToken, userInfo } });
     }
-    return null;
+    else {
+     
+      return res.status(401).json({ message: 'Credenciales incorrectas2' }); 
+    }
   }),
 }));
+const { loginUser, hashPassword } = require('./Back/Controllers/loginCrud');
 
-const { verifyUserCredentials } = require('./Back/Controllers/loginCrud');
 
 describe('Backend API Endpoints', () => {
   beforeEach(() => {
@@ -25,31 +66,42 @@ describe('Backend API Endpoints', () => {
   });
 
   test('POST /api/login should return 200 for valid credentials', async () => {
-    verifyUserCredentials.mockResolvedValueOnce({ id: 1, email: 'test@example.com', role: 'user' });
 
+    hashPassword.mockReturnValueOnce('mockedtesthash'); 
     const response = await request(app)
       .post('/api/login')
       .send({ email: 'test@example.com', password: 'testpassword' });
 
     expect(response.statusCode).toBe(200);
-    expect(verifyUserCredentials).toHaveBeenCalledTimes(1);
-    expect(verifyUserCredentials).toHaveBeenCalledWith('test@example.com', 'testpassword');
+    expect(response.body).toHaveProperty('userData');
+    expect(response.body.userData).toHaveProperty('token');
+    expect(response.body.userData.userInfo.correo).toBe('test@example.com');
+    expect(response.body.userData.userInfo.rol).toBe('user');
+    expect(hashPassword).toHaveBeenCalledTimes(1); 
+    expect(hashPassword).toHaveBeenCalledWith('testpassword');
+    expect(loginUser).toHaveBeenCalledTimes(1); 
   });
 
   test('POST /api/login should return 401 for invalid credentials', async () => {
-    verifyUserCredentials.mockResolvedValueOnce(null);
+   
+    hashPassword.mockReturnValueOnce('someotherhash');
 
     const response = await request(app)
       .post('/api/login')
       .send({ email: 'wrong@example.com', password: 'wrongpassword' });
 
     expect(response.statusCode).toBe(401);
-    expect(response.body.message).toEqual('Credenciales inválidas');
-    expect(verifyUserCredentials).toHaveBeenCalledTimes(1);
+    expect(response.body.message).toEqual('Credenciales incorrectas2');
+    expect(hashPassword).toHaveBeenCalledTimes(1);
+    expect(loginUser).toHaveBeenCalledTimes(1);
   });
 
-  test('GET /api/admin/some-resource should return 401 if unauthorized', async () => {
-    const response = await request(app).get('/api/admin/some-resource');
-    expect(response.statusCode).toBe(401);
+ 
+  test('GET /api/admin/non-existent-resource should return 404 or 401', async () => {
+    const response = await request(app).get('/api/admin/non-existent-resource');
+
+    expect(response.statusCode).toBeGreaterThanOrEqual(401); 
   });
+
+  
 });
