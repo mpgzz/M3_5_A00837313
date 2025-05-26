@@ -5,14 +5,11 @@ on:
     workflows: ["Build Monorepo (Front & Back)"]
     types:
       - completed
-    branches:
-      - main
 
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
-
     steps:
       - name: Download Frontend Build Artifact
         uses: actions/download-artifact@v3
@@ -33,7 +30,6 @@ jobs:
   deploy-backend:
     runs-on: ubuntu-latest
     if: github.event.workflow_run.conclusion == 'success'
-
     steps:
       - name: Download Backend ZIP Artifact
         uses: actions/download-artifact@v3
