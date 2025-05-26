@@ -1,0 +1,50 @@
+name: Deploy to Azure
+
+on:
+  workflow_run:
+    workflows: ["Build Monorepo (Front & Back)"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Download Frontend Build Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: ./frontend-build
+
+      - name: Deploy Frontend to Azure Static Web App
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "./frontend-build"
+          output_location: "/"
+          api_location: ""
+
+  deploy-backend:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Download Backend ZIP Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-zip
+          path: .
+
+      - name: Deploy Backend to Azure App Service
+        run: |
+          curl -X POST "https://your-app-service-name.scm.azurewebsites.net/api/zipdeploy" \
+          --user "${{ secrets.ZIPDEPLOY_USER }}:${{ secrets.ZIPDEPLOY_PASS }}" \
+          --data-binary @"backend.zip"
+        env:
+          NODE_ENV: production
