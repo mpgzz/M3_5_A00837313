@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -12,17 +11,26 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+process.on('uncaughtException', (err) => {
+  console.error('Error:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Error:', err);
+  process.exit(1);
+});
+
 app.use(cors());
 app.use(express.json());
+
 app.use('/api', loginRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
 
-
 app.use((req, res) => {
   res.status(404).json({ message: 'No encontrado' });
 });
-
 
 if (process.env.NODE_ENV !== 'test') {
   connectToDatabase()
@@ -38,8 +46,4 @@ if (process.env.NODE_ENV !== 'test') {
     });
 }
 
-
 module.exports = app;
-
-
-
