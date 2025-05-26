@@ -1,0 +1,465 @@
+openapi: 3.0.0
+info:
+  title: API de Gestión de Usuarios y Autenticación
+  version: 1.0.0
+  description: API para la gestión de usuarios y autenticación en el sistema.
+
+servers:
+  - url: http://localhost:5001/api
+    description: Servidor de Desarrollo Local
+  - url: https://your-deployed-backend-url.com/api
+    description: Servidor de Producción
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        usuId:
+          type: string
+          description: ID único del usuario
+          example: "1"
+        primerNombre:
+          type: string
+          description: Primer nombre del usuario
+          example: "Al"
+        primerApellido:
+          type: string
+          description: Primer apellido del usuario
+          example: "Perez"
+        segundoApellido:
+          type: string
+          description: Segundo apellido del usuario
+          example: "Sanchez"
+        correo:
+          type: string
+          format: email
+          description: Correo electrónico del usuario
+          example: "al@gmail.com"
+        contrasena:
+          type: string
+          format: password
+          description: Contraseña del usuario (se enviará y hasheará en el backend)
+          example: "1234"
+        rol:
+          type: string
+          description: Rol del usuario en el sistema
+          enum: [ "admin", "other" ]
+          example: "admin"
+      required:
+        - usuId
+        - primerNombre
+        - primerApellido
+        - correo
+        - contrasena
+        - rol
+
+    UserLogin:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "al@gmail.com"
+        password:
+          type: string
+          format: password
+          example: "1234"
+      required:
+        - email
+        - password
+
+    UserDataResponse:
+      type: object
+      properties:
+        usuId:
+          type: string
+          example: "1"
+        primerNombre:
+          type: string
+          example: "Al"
+        primerApellido:
+          type: string
+          example: "Perez"
+        segundoApellido:
+          type: string
+          example: "Sanchez"
+        correo:
+          type: string
+          format: email
+          example: "al@gmail.com"
+        rol:
+          type: string
+          example: "admin"
+        carreraNomen:
+          type: string
+          nullable: true
+          example: "ITC"
+        carreraNombre:
+          type: string
+          nullable: true
+          example: "Ingenieria en Tecnologias Computacionales"
+        fechaGrad:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-06-12"
+        directorNombre:
+          type: string
+          nullable: true
+          example: "Juan Simons"
+        caliPromedio:
+          type: number
+          format: float
+          nullable: true
+          example: 90
+        nivelIngles:
+          type: string
+          nullable: true
+          example: "B2"
+
+paths:
+  /login:
+    post:
+      summary: Iniciar sesión de usuario
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        200:
+          description: Inicio de sesión exitoso. Retorna el token JWT y la información del usuario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userData:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        description: Token de autenticación JWT
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                      userInfo:
+                        type: object
+                        properties:
+                          usuId:
+                            type: string
+                          correo:
+                            type: string
+                          rol:
+                            type: string
+                          primerNombre:
+                            type: string
+                          primerApellido:
+                            type: string
+                          segundoApellido:
+                            type: string
+        401:
+          description: Credenciales incorrectas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Credenciales incorrectas1"
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error del servidor"
+
+  /admin:
+    post:
+      summary: Crear un nuevo usuario (solo para administradores)
+      tags:
+        - Administración de Usuarios
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: Usuario creado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usario creado"
+        400:
+          description: Datos de entrada inválidos.
+        401:
+          description: No autorizado (token faltante o inválido).
+        403:
+          description: Prohibido (rol insuficiente).
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error creando usuario"
+    get:
+      summary: Obtener todos los usuarios (solo para administradores)
+      tags:
+        - Administración de Usuarios
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Lista de usuarios obtenida exitosamente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        401:
+          description: No autorizado (token faltante o inválido).
+        403:
+          description: Prohibido (rol insuficiente).
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error obteniendo usuarios"
+
+  /admin/{usuId}:
+    put:
+      summary: Actualizar un usuario existente por ID (solo para administradores)
+      tags:
+        - Administración de Usuarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuId
+          in: path
+          required: true
+          description: ID del usuario a actualizar.
+          schema:
+            type: string
+            example: "1"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                primerNombre:
+                  type: string
+                  example: "Roberto"
+                primerApellido:
+                  type: string
+                  example: "Carlos"
+                segundoApellido:
+                  type: string
+                  example: "Suárez"
+                correo:
+                  type: string
+                  format: email
+                  example: "roberto.carlos@example.com"
+                contrasena:
+                  type: string
+                  format: password
+                  example: "newpassword456"
+                rol:
+                  type: string
+                  enum: [ "admin", "other" ]
+                  example: "admin"
+      responses:
+        200:
+          description: Usuario actualizado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usiario actualizado"
+        400:
+          description: Error en la actualización de filas (ej. no se proporcionaron campos válidos).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error en actualización de filas"
+        401:
+          description: No autorizado (token faltante o inválido).
+        403:
+          description: Prohibido (rol insuficiente).
+        404:
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario no encontrado"
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error actualizando usuario"
+    delete:
+      summary: Eliminar un usuario por ID (solo para administradores)
+      tags:
+        - Administración de Usuarios
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: usuId
+          in: path
+          required: true
+          description: ID del usuario a eliminar.
+          schema:
+            type: string
+            example: "1"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                usuId:
+                  type: string
+                  description: ID único del usuario (redundante con path, pero necesario si el crud lo requiere en body)
+                  example: "1"
+                primerNombre:
+                  type: string
+                  description: Primer nombre para verificar.
+                  example: "Al"
+                primerApellido:
+                  type: string
+                  description: Primer apellido para verificar.
+                  example: "Perez"
+                correo:
+                  type: string
+                  format: email
+                  description: Correo electrónico para verificar.
+                  example: "al@gmail.com"
+              required:
+                - usuId
+                - primerNombre
+                - primerApellido
+                - correo
+      responses:
+        200:
+          description: Usuario eliminado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario eliminado"
+        401:
+          description: No autorizado (token faltante o inválido).
+        403:
+          description: Prohibido (rol insuficiente).
+        404:
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Usuario no encontrado"
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error eliminando usuario"
+
+  /user/data:
+    get:
+      summary: Obtener datos del perfil del usuario (requiere autenticación)
+      tags:
+        - Perfil de Usuario
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Datos del usuario obtenidos exitosamente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDataResponse'
+        401:
+          description: No autorizado (token faltante o inválido).
+        403:
+          description: Prohibido (token inválido).
+        404:
+          description: No se encontraron datos para el usuario.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No se encontraron datos del usuario"
+        500:
+          description: Error del servidor.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Error obteniendo datos"
