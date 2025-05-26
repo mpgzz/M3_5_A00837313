@@ -18,6 +18,11 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Clean frontend node_modules and package-lock.json
+        run: |
+          rm -rf node_modules package-lock.json
+        working-directory: ./front
+
       - name: Install frontend dependencies
         run: npm install --legacy-peer-deps
         working-directory: ./front
