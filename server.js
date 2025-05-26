@@ -5,6 +5,9 @@ const { connectToDatabase } = require('./Back/Controllers/loginCrud');
 const loginRoutes = require('./Back/Routes/loginRoutes');
 const adminRoutes = require('./Back/Routes/adminRoutes');
 const userRoutes = require('./Back/Routes/othersRoutes');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const swaggerDocument = YAML.load('./swagger.yaml');
 
 dotenv.config();
 
@@ -27,6 +30,7 @@ app.use(express.json());
 app.use('/api', loginRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use((req, res) => {
   res.status(404).json({ message: 'No encontrado' });
