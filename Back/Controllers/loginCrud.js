@@ -11,10 +11,10 @@ const connectToDatabase = async () => {
   if (!connectedPool) {
     const pool = new sql.ConnectionPool({
       user: process.env.DB_USER,
-      password: process.env.PW,
-      server: process.env.SERVER,
-      database: process.env.BD,
-      encrypt: process.env.ENCRYPT === 'true',
+      password: process.env.DB_PASSWORD,
+      server: process.env.DB_SERVER,
+      database: process.env.DB_DATABASE,
+      encrypt: process.env.DB_ENCRYPT === 'true',
       options: {
         trustedConnection: false,
       },
