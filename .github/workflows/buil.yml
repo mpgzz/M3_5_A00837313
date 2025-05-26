@@ -1,4 +1,4 @@
-name: Build (Front & Back)
+name: Build Monorepo (Front & Back)
 
 on:
   push:
