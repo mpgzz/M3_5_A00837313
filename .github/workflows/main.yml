@@ -1,4 +1,4 @@
-name: Deploy Frontend and Backend to Azure
+name: Build and Deploy Frontend and Backend
 
 on:
   push:
@@ -6,47 +6,53 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build-and-deploy-frontend:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
-    
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install frontend dependencies
-        run: npm install --prefix front
+        run: npm install --legacy-peer-deps
+        working-directory: ./front
 
       - name: Build frontend
-        run: npm run build --prefix front
-        env:
-          CI: true
+        run: npm run build
+        working-directory: ./front
 
-      - name: Deploy frontend to Azure Static Web App
+      - name: Deploy frontend to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: upload
+          action: "upload"
           app_location: "front"
           output_location: "front/build"
           api_location: ""
 
+  deploy-backend:
+    runs-on: ubuntu-latest
+    needs: build-and-deploy-frontend
 
-      - name: Install zip utility
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install zip
         run: sudo apt-get update && sudo apt-get install -y zip
 
-      - name: Create backend zip
+      - name: Create backend ZIP file
         run: |
           zip -r backend.zip server.js Back/ package.json -x "node_modules/*" ".git/*" ".github/*" ".env*"
 
       - name: Deploy backend to Azure App Service via ZipDeploy
         run: |
           curl -X POST "https://${{ secrets.AZURE_WEBAPP_BACKEND_NAME }}.scm.azurewebsites.net/api/zipdeploy" \
-          --user "${{ secrets.AZURE_WEBAPP_BACKEND_PUBLISH_PROFILE }}" \
+          -u "${{ secrets.AZURE_WEBAPP_BACKEND_PUBLISH_PROFILE }}" \
           --data-binary @"backend.zip"
