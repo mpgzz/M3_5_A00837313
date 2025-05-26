@@ -10,7 +10,7 @@ import ContactVista from './pags/contactos';
 function App() {
   const handleLogin = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5001/api/login', {
+      const response = await fetch('https://pymex.azurewebsites.net/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
