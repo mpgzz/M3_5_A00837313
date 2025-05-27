@@ -42,6 +42,7 @@ if (process.env.NODE_ENV !== 'test') {
       console.log("Conexión exitosa a la base de datos.");
       app.listen(PORT, () => {
         console.log(`Servidor corriendo en el puerto: ${PORT}`);
+        console.log(`Swagger UI disponible en: http://localhost:${PORT}/api-docs`);
       });
     })
     .catch((err) => {

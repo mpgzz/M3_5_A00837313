@@ -7,7 +7,7 @@ info:
 servers:
   - url: http://localhost:5001/api
     description: Servidor de Desarrollo Local
-  - url: https://your-deployed-backend-url.com/api
+  - url: https://m3_evalA00837313.com/api
     description: Servidor de Producción
 
 components:
